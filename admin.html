@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Administration — Prunelle &amp; Amande</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="images/favicon-32.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin-body">
+
+
+
+<!-- ÉCRAN DE CONNEXION -->
+<div class="lock-screen" id="lock-screen" hidden>
+  <form class="lock-card" id="lock-form">
+    <img src="images/logo.png" alt="Prunelle & Amande" class="lock-logo">
+    <h1>Espace administration</h1>
+    <p>Cette page permet de gérer les prestations, les avantages, vos clientes et le calendrier affichés sur le site.</p>
+    <label for="lock-email">E-mail</label>
+    <input type="email" id="lock-email" autocomplete="username" required>
+    <label for="lock-passcode">Mot de passe</label>
+    <input type="password" id="lock-passcode" autocomplete="current-password" required>
+    <p class="lock-error" id="lock-error" hidden>Identifiants incorrects, réessayez.</p>
+    <button type="submit" class="btn btn-primary">Se connecter</button>
+    
+  </form>
+</div>
+
+
+<!-- INTERFACE ADMIN -->
+<div class="admin-shell" id="admin-shell" hidden>
+
+  <header class="admin-header">
+    <div class="admin-header-inner">
+      <a href="index.html" class="admin-brand">
+        <img src="images/logo.png" alt="Prunelle & Amande">
+        <span>Administration</span>
+      </a>
+      <div class="admin-header-actions">
+        <a href="index.html" class="admin-view-site" target="_blank" rel="noopener">Voir le site ↗</a>
+        <button type="button" class="admin-view-site admin-logout-btn" id="logout-btn">Se déconnecter</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="admin-layout">
+    <nav class="admin-tabs" aria-label="Sections d'administration">
+      <button class="admin-tab is-active" data-tab="prestations" type="button">Prestations</button>
+      <button class="admin-tab" data-tab="avantages" type="button">Avantages</button>
+      <button class="admin-tab" data-tab="clients" type="button">Clientes &amp; réservations</button>
+      <button class="admin-tab" data-tab="calendrier" type="button">Calendrier des rendez-vous</button>
+    </nav>
+
+    <main class="admin-content">
+
+      <p class="admin-banner" id="save-banner" hidden></p>
+
+      <!-- PRESTATIONS -->
+      <section class="admin-panel is-active" id="panel-prestations">
+        <div class="admin-panel-head">
+          <div>
+            <h2>Prestations</h2>
+            <p>Ces catégories et prestations alimentent à la fois la section « Prestations &amp; tarifs » et le bon de commande du site. Chaque modification est enregistrée immédiatement — vos clientes la voient tout de suite.</p>
+          </div>
+          <button type="button" class="btn btn-ghost" id="add-category-btn">+ Ajouter une catégorie</button>
+        </div>
+        <div id="services-editor"></div>
+      </section>
+
+      <!-- AVANTAGES -->
+      <section class="admin-panel" id="panel-avantages">
+        <div class="admin-panel-head">
+          <div>
+            <h2>Avantages</h2>
+            <p>Les cartes affichées dans la section « Vos avantages » du site. Chaque modification est enregistrée immédiatement.</p>
+          </div>
+          <button type="button" class="btn btn-ghost" id="add-offer-btn">+ Ajouter un avantage</button>
+        </div>
+        <div id="offers-editor"></div>
+      </section>
+
+            <!-- CLIENTES & RESERVATIONS (CRM) -->
+      <section class="admin-panel" id="panel-clients">
+        <div class="admin-panel-head">
+          <div>
+            <h2>Clientes &amp; réservations</h2>
+            <p>Chaque bon de commande envoyé depuis le site apparaît ci-dessous. Ces informations sont privées : seule une personne connectée à cet espace peut les consulter.</p>
+          </div>
+          <button type="button" class="btn btn-ghost" id="refresh-bookings-btn">↻ Actualiser</button>
+        </div>
+        <div id="bookings-list"></div>
+
+        <div class="admin-panel-head admin-panel-head-sub">
+          <div>
+            <h3>Fiches clientes</h3>
+            <p>Votre répertoire de clientes, indépendant des réservations — pour garder une fiche même sans bon de commande en cours. Depuis une réservation ci-dessus, utilisez « → Fiche cliente » pour la reprendre automatiquement ici.</p>
+          </div>
+          <button type="button" class="btn btn-ghost" id="add-client-btn">+ Ajouter une cliente</button>
+        </div>
+        <div id="clients-editor"></div>
+      </section>
+
+      <!-- CALENDRIER -->
+      <section class="admin-panel" id="panel-calendrier">
+        <div class="admin-panel-head">
+          <div>
+            <h2>Calendrier des rendez-vous</h2>
+            <p>Un site statique ne peut pas enregistrer automatiquement les réservations dans une base de données. La solution la plus simple et gratuite est d'afficher ici votre Google Agenda.</p>
+          </div>
+        </div>
+
+        <div class="admin-card">
+          <ol class="admin-steps">
+            <li>Ouvrez Google Agenda sur ordinateur, et créez (ou choisissez) l'agenda où vous notez vos rendez-vous.</li>
+            <li>Dans les paramètres de cet agenda, ouvrez « Intégrer l'agenda ».</li>
+            <li>Copiez le code affiché, et collez-le ci-dessous — l'adresse est automatiquement extraite.</li>
+          </ol>
+          <div class="form-field">
+            <label for="calendar-embed-input">Code d'intégration ou lien Google Agenda</label>
+            <textarea id="calendar-embed-input" rows="3" placeholder='&lt;iframe src="https://calendar.google.com/calendar/embed?src=..." ...&gt;&lt;/iframe&gt;'></textarea>
+          </div>
+          <button type="button" class="btn btn-primary" id="save-calendar-btn">Enregistrer le calendrier</button>
+          <p class="form-status" id="calendar-status" role="status"></p>
+        </div>
+
+        <div class="admin-card" id="calendar-preview-card" hidden>
+          <h3>Aperçu</h3>
+          <div class="calendar-frame">
+            <iframe id="calendar-iframe" title="Calendrier des rendez-vous" loading="lazy"></iframe>
+          </div>
+          <p class="admin-hint">Cet aperçu n'apparaît que dans cette page d'administration ; il n'est pas visible par vos clientes sur le site public, sauf si vous demandez de l'ajouter à une page dédiée.</p>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- Modèle (template) pour un item de prestation, dupliqué en JS -->
+<template id="item-row-template">
+  <div class="item-row">
+    <input type="text" class="item-name" placeholder="Nom de la prestation">
+    <input type="text" class="item-duration" placeholder="Durée (ex. 30 min)">
+    <input type="number" class="item-price" placeholder="Prix €" min="0" step="0.5">
+    <input type="text" class="item-description" placeholder="Description (optionnel)">
+    <button type="button" class="item-delete" aria-label="Supprimer cette prestation">✕</button>
+  </div>
+</template>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>
