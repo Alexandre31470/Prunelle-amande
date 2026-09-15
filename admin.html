@@ -56,6 +56,7 @@
       <button class="admin-tab is-active" data-tab="prestations" type="button">Prestations</button>
       <button class="admin-tab" data-tab="avantages" type="button">Avantages</button>
       <button class="admin-tab" data-tab="clients" type="button">Clientes &amp; réservations</button>
+      <button class="admin-tab" data-tab="giftcards" type="button">Bons cadeaux</button>
       <button class="admin-tab" data-tab="calendrier" type="button">Calendrier des rendez-vous</button>
     </nav>
 
@@ -108,6 +109,18 @@
         <div id="clients-editor"></div>
       </section>
 
+      <!-- BONS CADEAUX -->
+      <section class="admin-panel" id="panel-giftcards">
+        <div class="admin-panel-head">
+          <div>
+            <h2>Bons cadeaux</h2>
+            <p>Chaque demande de bon cadeau envoyée depuis le site apparaît ci-dessous. Une fois le paiement réglé (terminal de paiement), confirmez-le ici&nbsp;: un code est généré et le bon cadeau est envoyé automatiquement par e-mail à la personne bénéficiaire.</p>
+          </div>
+          <button type="button" class="btn btn-ghost" id="refresh-giftcards-btn">↻ Actualiser</button>
+        </div>
+        <div id="giftcards-list"></div>
+      </section>
+
       <!-- CALENDRIER -->
       <section class="admin-panel" id="panel-calendrier">
         <div class="admin-panel-head">
@@ -155,6 +168,7 @@
   </div>
 </template>
 
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/admin.js"></script>

@@ -368,44 +368,18 @@ img{ max-width: 100%; display: block; }
 .about-visual{
   display: flex;
   justify-content: center;
-  background: var(--cream);
-  border-radius: 20px;
-  padding: 20px;
-  box-shadow: 0 24px 46px -18px rgba(20,24,14,0.55);
-}
-.about-photo{
+
+} 
+  
+.about-photo
+{
   display: block;
   width: 100%;
-  max-width: 190px;
-  opacity: 0.94;
+max-width: 400px;
+opacity: 0.94;
 }
-.eye-frame{
-  position: relative;
-  width: 200px;
-  aspect-ratio: 2 / 3;
-  border-radius: 16px;
-  overflow: hidden;
-  background: var(--cream);
-  box-shadow: 0 24px 46px -18px rgba(20,24,14,0.55);
-  border: 1px solid rgba(245,239,224,0.25);
-}
-.eye-frame::after{
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  box-shadow: inset 0 0 0 1px rgba(184,134,58,0.35);
-  pointer-events: none;
-}
-.eye-video{
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-@media (min-width: 640px){
-  .eye-frame{ width: 230px; }
-}
+
+
 
 /* ---------- Price accordion (Prestations) ---------- */
 .price-accordion{ display: grid; gap: 14px; max-width: 760px; margin: 0 auto; }
@@ -697,8 +671,17 @@ img{ max-width: 100%; display: block; }
   gap: 40px;
   align-items: center;
 }
+.about-copy,
+.about-copy h2,
+.about-copy p,
+.about-copy .about-signature{
+  text-align: right;
+}
+.about-copy p{
+  margin-left: auto;
+}
 @media (min-width: 900px){
-  .about-grid{ grid-template-columns: 280px 1fr; align-items: center; }
+  .about-grid{ grid-template-columns: 340px 1fr; align-items: center; }
 }
 
 /* ==========================================================================

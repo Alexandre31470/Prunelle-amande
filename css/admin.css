@@ -13,6 +13,7 @@
   padding: 24px;
   background: linear-gradient(160deg, var(--sage-deep), var(--sage) 130%);
 }
+.lock-screen[hidden]{ display: none; }
 .lock-card{
   background: var(--cream);
   border-radius: 12px;
@@ -363,6 +364,9 @@
 }
 .booking-status[data-status="nouveau"]{ border-color: var(--terracotta); color: var(--terracotta-deep); }
 .booking-status[data-status="confirmé"]{ border-color: var(--sage); color: var(--sage-deep); }
+.booking-status[data-status="paye"]{ border-color: var(--sage); color: var(--sage-deep); }
+.booking-status[data-status="utilise"]{ border-color: var(--border-soft); color: var(--text-muted); }
+.booking-status[data-status="annule"]{ border-color: #b3453c; color: #b3453c; }
 .booking-empty, .admin-loading{
   color: var(--text-muted);
   font-size: 0.92rem;
