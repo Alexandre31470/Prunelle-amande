@@ -468,6 +468,31 @@
   color: var(--text-muted);
 }
 .client-history-empty{ margin: 8px 0 0; color: var(--text-muted); }
+.client-add-visit-btn{
+  margin-top: 10px;
+  font-size: 0.82rem;
+  padding: 0.45em 0.8em;
+}
+.client-add-visit-form{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px;
+  background: var(--cream);
+  border-radius: var(--radius);
+}
+.client-add-visit-form input{
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  padding: 0.5em 0.7em;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  background: var(--white);
+}
+.client-add-visit-form input[type="text"]{ flex: 1 1 220px; }
+.client-add-visit-form input[type="date"]{ flex: 0 0 150px; }
+.client-add-visit-form input[type="number"]{ flex: 0 0 130px; }
 .booking-to-client-btn{
   background: none;
   border: 1px solid var(--border-soft);

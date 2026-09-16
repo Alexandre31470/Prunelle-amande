@@ -252,8 +252,9 @@ formulaire public, pensez à autoriser les deux rôles de la même façon.
 Les fiches clientes (`admin.html` → onglet « Clientes & réservations ») ne
 se limitent plus à un simple répertoire : chaque fiche affiche maintenant
 automatiquement, sous les champs modifiables, un bloc calculé à partir de
-l'historique de réservations de la cliente (rapproché par son **e-mail** —
-aucune saisie supplémentaire n'est nécessaire) :
+l'historique de réservations de la cliente (rapprochées par **e-mail ou
+téléphone** — dès que l'un des deux correspond, aucune saisie
+supplémentaire n'est nécessaire) :
 
 - **Cliente depuis le [date]** : date de sa toute première réservation.
 - **Dernière visite le [date]**, avec un badge **« À relancer »** si elle
@@ -270,6 +271,19 @@ aucune saisie supplémentaire n'est nécessaire) :
   institut, puis de garder une trace (par exemple dans les notes).
 - **Historique des prestations** : repliable, liste chaque réservation
   passée (date, prestations, statut).
+
+Ce bloc ne se remplit qu'à partir des réservations passées par le
+**formulaire du site**. Pour une cliente dont les premiers rendez-vous ont
+été notés à la main (avant l'ouverture du site, ou prise par téléphone), ce
+bloc reste vide tant qu'aucune réservation n'existe pour elle en base — ce
+n'est pas un bug, il n'y a simplement rien à calculer. Un bouton
+**« + Ajouter une prestation passée »** sous l'historique de chaque fiche
+permet de rattraper ce cas : indiquez la date, les prestations réalisées et
+le montant payé, et l'entrée s'ajoute à l'historique (statut « terminé »)
+exactement comme une réservation reçue depuis le site — l'ancienneté, le CA
+et les points de fidélité se recalculent aussitôt. Un e-mail ou un
+téléphone doit être renseigné sur la fiche au préalable, c'est ce qui
+permet de relier la prestation à la bonne cliente.
 
 Deux nouveaux champs viennent aussi compléter chaque fiche :
 

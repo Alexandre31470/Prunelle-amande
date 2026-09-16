@@ -511,17 +511,26 @@
       clientsEditor.innerHTML = '<p class="admin-loading">Chargement…</p>';
       const [clientsRes, bookingsRes] = await Promise.all([
         sb.from("clients").select("*").order("created_at", { ascending: false }),
-        sb.from("bookings").select("email, wanted_date, items, total, status, created_at"),
+        sb.from("bookings").select("email, phone, wanted_date, items, total, status, created_at"),
       ]);
       if (clientsRes.error) { showError("Impossible de charger les fiches clientes.", clientsRes.error); return; }
       renderClientsEditor(clientsRes.data || [], bookingsRes.data || []);
     }
 
+    function normalizePhone(str) {
+      return String(str || "").replace(/\D/g, "");
+    }
+
     function computeClientStats(client, bookings) {
       const email = (client.email || "").trim().toLowerCase();
-      const history = email
+      const phone = normalizePhone(client.phone);
+      const history = (email || phone)
         ? bookings
-            .filter(function (b) { return (b.email || "").trim().toLowerCase() === email; })
+            .filter(function (b) {
+              const emailMatch = email && (b.email || "").trim().toLowerCase() === email;
+              const phoneMatch = phone && normalizePhone(b.phone) === phone;
+              return emailMatch || phoneMatch;
+            })
             .sort(function (a, b) { return new Date(b.wanted_date || b.created_at) - new Date(a.wanted_date || a.created_at); })
         : [];
 
@@ -671,6 +680,69 @@
             '<span>Points fidélité : ' + stats.points + ' pt' + (stats.points > 1 ? "s" : "") + ' (' + stats.pointsToNext + ' avant la prochaine réduction de ' + LOYALTY_REWARD_AMOUNT + '&nbsp;€)</span>' +
           '</div>' +
           '<details class="client-history-details"><summary>Historique des prestations (' + stats.history.length + ')</summary>' + historyHtml + '</details>';
+
+        // --- Ajout manuel d'une prestation passée (ex. rendez-vous notés à la
+        //     main avant l'ouverture du site, ou pris par téléphone) ---
+        const addVisitBtn = document.createElement("button");
+        addVisitBtn.type = "button";
+        addVisitBtn.className = "btn btn-ghost client-add-visit-btn";
+        addVisitBtn.textContent = "+ Ajouter une prestation passée";
+
+        const addVisitForm = document.createElement("div");
+        addVisitForm.className = "client-add-visit-form";
+        addVisitForm.hidden = true;
+
+        const visitDateInput = document.createElement("input");
+        visitDateInput.type = "date";
+        visitDateInput.value = new Date().toISOString().slice(0, 10);
+
+        const visitItemsInput = document.createElement("input");
+        visitItemsInput.type = "text";
+        visitItemsInput.placeholder = "Prestations réalisées (séparées par des virgules)";
+
+        const visitTotalInput = document.createElement("input");
+        visitTotalInput.type = "number";
+        visitTotalInput.min = "0";
+        visitTotalInput.step = "0.01";
+        visitTotalInput.placeholder = "Montant payé (€)";
+
+        const visitSaveBtn = document.createElement("button");
+        visitSaveBtn.type = "button";
+        visitSaveBtn.className = "btn btn-ghost";
+        visitSaveBtn.textContent = "Enregistrer";
+        visitSaveBtn.addEventListener("click", async function () {
+          if (!client.email && !client.phone) {
+            showError("Renseignez d'abord l'e-mail ou le téléphone de cette cliente : c'est ce qui permet de relier une prestation passée à sa fiche.", null);
+            return;
+          }
+          const items = visitItemsInput.value.split(",").map(function (s) { return s.trim(); }).filter(Boolean).map(function (label) { return { label: label }; });
+          const { error } = await sb.from("bookings").insert({
+            first_name: client.first_name || "",
+            last_name: client.last_name || "",
+            email: client.email || "",
+            phone: client.phone || "",
+            wanted_date: visitDateInput.value || null,
+            items: items,
+            total: Number(visitTotalInput.value) || 0,
+            status: "terminé",
+            message: "Ajoutée manuellement depuis la fiche cliente.",
+          });
+          if (error) { showError("Impossible d'enregistrer cette prestation.", error); return; }
+          showBanner("Prestation passée ajoutée à l'historique.", "success");
+          loadClients();
+        });
+
+        addVisitForm.appendChild(visitDateInput);
+        addVisitForm.appendChild(visitItemsInput);
+        addVisitForm.appendChild(visitTotalInput);
+        addVisitForm.appendChild(visitSaveBtn);
+
+        addVisitBtn.addEventListener("click", function () {
+          addVisitForm.hidden = !addVisitForm.hidden;
+        });
+
+        statsBlock.appendChild(addVisitBtn);
+        statsBlock.appendChild(addVisitForm);
 
         const topRow = document.createElement("div");
         topRow.className = "client-card-top";
