@@ -258,9 +258,8 @@ supplémentaire n'est nécessaire) :
 
 - **Cliente depuis le [date]** : date de sa toute première réservation.
 - **Dernière visite le [date]**, avec un badge **« À relancer »** si elle
-  n'est pas revenue depuis plus de 3 mois. Un résumé du nombre de clientes
-  concernées s'affiche en haut de la liste. Ce seuil de 3 mois est réglable
-  dans `js/admin.js`, constante `RELANCE_THRESHOLD_MONTHS`.
+  n'est pas revenue depuis plus de 3 mois. Ce seuil est réglable dans
+  `js/admin.js`, constante `RELANCE_THRESHOLD_MONTHS`.
 - **CA réalisé** : somme des réservations passées au statut « terminé ».
 - **Points de fidélité** : selon votre règle (1 € dépensé = 1 point, une
   réduction de 10 € tous les 250 points), avec un badge 🎁 dès qu'une
@@ -271,6 +270,13 @@ supplémentaire n'est nécessaire) :
   institut, puis de garder une trace (par exemple dans les notes).
 - **Historique des prestations** : repliable, liste chaque réservation
   passée (date, prestations, statut).
+
+En plus de ces badges sur chaque fiche, **trois encarts d'alerte**
+apparaissent tout en haut de la liste, avec le nom des clientes concernées,
+dès qu'il y en a au moins une : une pour les réductions de fidélité à
+offrir, une pour les anniversaires du mois, une pour les clientes à
+relancer. Ils disparaissent automatiquement dès qu'aucune cliente n'est
+concernée.
 
 Ce bloc ne se remplit qu'à partir des réservations passées par le
 **formulaire du site**. Pour une cliente dont les premiers rendez-vous ont

@@ -493,6 +493,23 @@
 .client-add-visit-form input[type="text"]{ flex: 1 1 220px; }
 .client-add-visit-form input[type="date"]{ flex: 0 0 150px; }
 .client-add-visit-form input[type="number"]{ flex: 0 0 130px; }
+
+/* ---------- Alertes clientes (fidélité, anniversaire, relance) ---------- */
+.client-alert{
+  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+}
+.client-alert strong{ display: block; font-family: var(--font-display); margin-bottom: 3px; }
+.client-alert p{ margin: 0; color: var(--text-muted); }
+.client-alert-reward{ background: #fbf3d9; border-color: #c9a227; }
+.client-alert-reward strong{ color: #8a6d12; }
+.client-alert-birthday{ background: var(--sage-tint); border-color: var(--sage); }
+.client-alert-birthday strong{ color: var(--sage-deep); }
+.client-alert-relance{ background: var(--cream); border-color: var(--terracotta); }
+.client-alert-relance strong{ color: var(--terracotta-deep); }
 .booking-to-client-btn{
   background: none;
   border: 1px solid var(--border-soft);

@@ -496,7 +496,7 @@
        FICHES CLIENTES (répertoire manuel + historique CRM)
     ======================================================= */
     const clientsEditor = document.getElementById("clients-editor");
-    const clientsRelanceSummary = document.getElementById("clients-relance-summary");
+    const clientsAlerts = document.getElementById("clients-alerts");
 
     // Une cliente est « à relancer » si sa dernière réservation remonte à
     // plus de ce nombre de mois. Ajustez cette valeur si besoin.
@@ -565,19 +565,61 @@
       return d.getMonth() === new Date().getMonth();
     }
 
+    function clientDisplayName(client) {
+      return ((client.first_name || "") + " " + (client.last_name || "")).trim() || "Cliente sans nom";
+    }
+
+    function renderClientsAlerts(clients, bookings) {
+      if (!clientsAlerts) return;
+      clientsAlerts.innerHTML = "";
+      if (!clients.length) return;
+
+      const relanceNames = [];
+      const rewardNames = [];
+      const birthdayNames = [];
+
+      clients.forEach(function (client) {
+        const stats = computeClientStats(client, bookings);
+        const name = clientDisplayName(client);
+        if (stats.toRelance) relanceNames.push(name);
+        if (stats.rewardsEarned > 0) rewardNames.push(name + " (" + stats.rewardsEarned + "×" + LOYALTY_REWARD_AMOUNT + " €)");
+        if (isBirthdayThisMonth(client.birthday)) birthdayNames.push(name);
+      });
+
+      const boxes = [];
+      if (rewardNames.length) {
+        boxes.push(
+          '<div class="client-alert client-alert-reward">' +
+            '<strong>🎁 Réduction fidélité à offrir</strong>' +
+            '<p>' + rewardNames.length + ' cliente' + (rewardNames.length > 1 ? "s ont" : " a") + ' atteint ' + LOYALTY_REWARD_THRESHOLD + ' points (ou un multiple) : ' + rewardNames.map(escapeHtml).join(", ") + '.</p>' +
+          '</div>'
+        );
+      }
+      if (birthdayNames.length) {
+        boxes.push(
+          '<div class="client-alert client-alert-birthday">' +
+            '<strong>🎂 Anniversaire ce mois-ci</strong>' +
+            '<p>' + birthdayNames.map(escapeHtml).join(", ") + '.</p>' +
+          '</div>'
+        );
+      }
+      if (relanceNames.length) {
+        boxes.push(
+          '<div class="client-alert client-alert-relance">' +
+            '<strong>⏰ Clientes à relancer</strong>' +
+            '<p>' + relanceNames.length + ' cliente' + (relanceNames.length > 1 ? "s n'ont" : " n'a") + ' pas pris rendez-vous depuis plus de ' + RELANCE_THRESHOLD_MONTHS + ' mois : ' + relanceNames.map(escapeHtml).join(", ") + '.</p>' +
+          '</div>'
+        );
+      }
+      clientsAlerts.innerHTML = boxes.join("");
+    }
+
     function renderClientsEditor(clients, bookings) {
       clientsEditor.innerHTML = "";
+      renderClientsAlerts(clients, bookings);
       if (!clients.length) {
         clientsEditor.innerHTML = '<p class="booking-empty">Aucune fiche cliente pour l\'instant.</p>';
-        if (clientsRelanceSummary) clientsRelanceSummary.textContent = "";
         return;
-      }
-
-      const relanceCount = clients.filter(function (c) { return computeClientStats(c, bookings).toRelance; }).length;
-      if (clientsRelanceSummary) {
-        clientsRelanceSummary.textContent = relanceCount
-          ? relanceCount + " cliente" + (relanceCount > 1 ? "s" : "") + " n'" + (relanceCount > 1 ? "ont" : "a") + " pas pris rendez-vous depuis plus de " + RELANCE_THRESHOLD_MONTHS + " mois — repérable avec le badge « À relancer » ci-dessous."
-          : "";
       }
 
       clients.forEach(function (client) {
