@@ -123,7 +123,7 @@ alter table clients   enable row level security;
 -- mais ne peut jamais la relire, la modifier ou la lister : les données
 -- de vos clientes restent privées.
 drop policy if exists "public_create_bookings" on bookings;
-create policy "public_create_bookings" on bookings for insert to anon with check (true);
+create policy "public_create_bookings" on bookings for insert to anon, authenticated with check (true);
 
 -- Seule une personne connectée (vous) peut consulter / gérer les demandes
 drop policy if exists "admin_read_bookings" on bookings;
@@ -172,7 +172,7 @@ alter table gift_cards enable row level security;
 -- Le site public peut CRÉER une demande de bon cadeau, mais ne peut jamais
 -- la relire, la modifier ou la lister.
 drop policy if exists "public_create_gift_cards" on gift_cards;
-create policy "public_create_gift_cards" on gift_cards for insert to anon with check (true);
+create policy "public_create_gift_cards" on gift_cards for insert to anon, authenticated with check (true);
 
 -- Seule une personne connectée (vous) peut consulter / gérer les bons cadeaux
 drop policy if exists "admin_read_gift_cards" on gift_cards;

@@ -230,6 +230,23 @@ visible par vos clientes sur le site public (par exemple pour montrer vos
 disponibilités), dites-le moi, c'est une section que je peux ajouter
 séparément.
 
+### 7.6 Si un formulaire du site échoue avec une erreur « 403 » alors que vous êtes connectée à l'admin
+
+Si vous testez un formulaire public (réservation ou bon cadeau) dans le
+**même navigateur** où vous êtes connectée à `admin.html`, la demande peut
+être refusée par Supabase (erreur « 403 Forbidden » visible dans la console
+du navigateur), alors que tout fonctionne normalement en navigation privée
+ou pour vos clientes. Ce n'est pas un bug d'extension de navigateur ni un
+problème de cache : c'est parce que votre session de connexion à l'admin
+est partagée avec tout le site (même nom de domaine), et les règles de
+sécurité Supabase (`supabase/schema.sql`) n'autorisaient au départ que les
+visiteurs anonymes à créer une réservation ou une demande de bon cadeau, pas
+les personnes connectées. Ce cas a été corrigé une fois pour toutes (les
+règles `public_create_bookings` et `public_create_gift_cards` autorisent
+désormais `anon` et `authenticated`), donc vous ne devriez plus le
+rencontrer. Si vous ajoutez un jour une nouvelle table alimentée par un
+formulaire public, pensez à autoriser les deux rôles de la même façon.
+
 ## 8. Bons cadeaux
 
 Le site permet désormais à vos clientes d'acheter un bon cadeau depuis
