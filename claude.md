@@ -53,59 +53,71 @@ Il ne reste que quelques éléments encore à compléter vous-même dans
 - Un lien Facebook si vous en créez un (pas encore ajouté, faute
   d'information).
 
-## 3. Activer l'envoi automatique des e-mails de réservation
+## 3. Activer l'envoi automatique des e-mails de notification
+
+**Statut actuel : entièrement configuré.** Compte EmailJS créé, **Public
+Key** (`rY3J00mlNl9YoXuYC`) et **Service ID** (`service_4ijfxp8`) renseignés
+dans `js/script.js` et `js/admin.js`, et le modèle de notification
+(`template_m25eyum`) créé et en place.
 
 Le site ne peut pas envoyer d'e-mails tout seul (un site statique n'a pas de
 serveur d'envoi). Il utilise le service **EmailJS**, gratuit jusqu'à 200
-e-mails par mois, qui permet d'envoyer un e-mail directement depuis le
-formulaire.
+e-mails par mois et **2 modèles maximum**. Tant que ce n'est pas configuré,
+un formulaire fonctionne quand même : il ouvre automatiquement le logiciel
+de messagerie du visiteur avec la demande déjà rédigée, prête à être
+envoyée.
 
-Tant que ce n'est pas configuré, le formulaire fonctionne quand même : il
-ouvre automatiquement le logiciel de messagerie du visiteur avec la demande
-déjà rédigée, prête à être envoyée.
+### Un seul modèle de notification, partagé par les deux formulaires
 
-### Étapes pour l'envoi 100% automatique
+Le forfait gratuit d'EmailJS limitant à 2 modèles, et le site ayant besoin
+de 3 e-mails différents (vous prévenir d'une réservation, vous prévenir
+d'une demande de bon cadeau, envoyer le bon cadeau à la bénéficiaire), les
+**deux premiers ont été fusionnés en un seul modèle générique**, utilisé
+aussi bien par le formulaire de réservation que par celui des bons cadeaux.
+Le troisième (l'envoi du bon cadeau lui-même) reste séparé — voir
+section 8.2 — puisqu'il ne s'adresse pas à vous mais à la bénéficiaire.
+
+Modèle de notification (« Email Templates » sur EmailJS), corps du
+modèle :
+
+```
+Nouvelle demande — {{request_type}}
+
+Nom : {{from_name}}
+E-mail : {{reply_to}}
+Téléphone : {{phone}}
+
+{{details}}
+```
+
+`{{request_type}}` indique le type de demande (« Réservation de rendez-vous »
+ou « Bon cadeau ») et `{{details}}` contient déjà, tout formaté, le détail
+propre à chaque cas (prestations et créneau souhaités pour une réservation,
+montant et bénéficiaire pour un bon cadeau) — vous n'avez rien à faire de
+plus dans le modèle, tout est généré automatiquement par le site.
+
+### Si vous devez un jour recréer ce modèle ou changer de compte EmailJS
 
 1. Créez un compte gratuit sur https://www.emailjs.com
 2. Dans « Email Services », connectez votre adresse e-mail (Gmail, Outlook,
    etc.) → notez le **Service ID**.
-3. Dans « Email Templates », créez un modèle avec les variables suivantes
-   (vous pouvez copier-coller ce texte comme corps du modèle) :
-
-   ```
-   Nouveau bon de commande
-
-   Nom : {{from_name}}
-   Téléphone : {{phone}}
-   E-mail : {{reply_to}}
-   Date souhaitée : {{date}}
-   Heure souhaitée : {{time}}
-
-   Prestations sélectionnées :
-   {{items}}
-
-   Total estimé : {{total}}
-
-   Adresse (si domicile souhaité) : {{address}}
-   Message : {{message}}
-   ```
-
-   Notez le **Template ID**.
+3. Dans « Email Templates », créez un modèle avec le corps ci-dessus, puis
+   notez son **Template ID**.
 4. Dans « Account » → « General », copiez votre **Public Key**.
-5. Ouvrez `js/script.js` et remplacez les 3 lignes en haut du fichier :
+5. Ouvrez `js/script.js` et remplacez, en haut du fichier :
 
    ```js
    const EMAILJS_PUBLIC_KEY = "VOTRE_PUBLIC_KEY";
    const EMAILJS_SERVICE_ID = "VOTRE_SERVICE_ID";
-   const EMAILJS_TEMPLATE_ID = "VOTRE_TEMPLATE_ID";
    const OWNER_EMAIL = "contact@prunelleetamande.fr";
+   const NOTIFY_TEMPLATE_ID = "VOTRE_TEMPLATE_ID";
    ```
 
    par vos propres identifiants, et mettez l'adresse e-mail qui doit
-   recevoir les demandes.
+   recevoir les demandes. Reportez aussi `EMAILJS_PUBLIC_KEY` et
+   `EMAILJS_SERVICE_ID` (mêmes valeurs) en haut de `js/admin.js`.
 
-6. Enregistrez, réhébergez le site : c'est prêt. Chaque demande de
-   rendez-vous vous sera envoyée automatiquement par e-mail.
+6. Enregistrez, réhébergez le site : c'est prêt.
 
 ## 4. Photos
 
@@ -217,3 +229,87 @@ fourni dans l'onglet. Si vous souhaitez un jour que ce calendrier soit
 visible par vos clientes sur le site public (par exemple pour montrer vos
 disponibilités), dites-le moi, c'est une section que je peux ajouter
 séparément.
+
+### 7.6 Si un formulaire du site échoue avec une erreur « 403 » alors que vous êtes connectée à l'admin
+
+Si vous testez un formulaire public (réservation ou bon cadeau) dans le
+**même navigateur** où vous êtes connectée à `admin.html`, la demande peut
+être refusée par Supabase (erreur « 403 Forbidden » visible dans la console
+du navigateur), alors que tout fonctionne normalement en navigation privée
+ou pour vos clientes. Ce n'est pas un bug d'extension de navigateur ni un
+problème de cache : c'est parce que votre session de connexion à l'admin
+est partagée avec tout le site (même nom de domaine), et les règles de
+sécurité Supabase (`supabase/schema.sql`) n'autorisaient au départ que les
+visiteurs anonymes à créer une réservation ou une demande de bon cadeau, pas
+les personnes connectées. Ce cas a été corrigé une fois pour toutes (les
+règles `public_create_bookings` et `public_create_gift_cards` autorisent
+désormais `anon` et `authenticated`), donc vous ne devriez plus le
+rencontrer. Si vous ajoutez un jour une nouvelle table alimentée par un
+formulaire public, pensez à autoriser les deux rôles de la même façon.
+
+## 8. Bons cadeaux
+
+Le site permet désormais à vos clientes d'acheter un bon cadeau depuis
+l'accueil (section « Bons cadeaux », montants fixes 30&nbsp;€ / 50&nbsp;€ /
+80&nbsp;€ / 120&nbsp;€). Le paiement ne se fait **pas en ligne** : la
+personne envoie sa demande depuis le site, puis vous la contactez pour
+encaisser le règlement avec votre terminal de paiement habituel (comme pour
+tout autre paiement en institut). Une fois le paiement reçu, vous confirmez
+la demande dans `admin.html` → onglet « Bons cadeaux » : un code unique est
+généré et **le bon cadeau est envoyé automatiquement par e-mail** à la
+personne bénéficiaire, avec le montant, le message personnalisé et une
+validité d'un an.
+
+### 8.1 Mettre à jour la base de données
+
+La nouvelle table `gift_cards` doit être créée dans Supabase : ouvrez
+**SQL Editor** → **New query**, copiez à nouveau tout le contenu de
+`supabase/schema.sql` (le script ne touche pas à vos données existantes,
+il ajoute seulement ce qui manque), puis cliquez sur **Run**.
+
+### 8.2 Activer l'envoi automatique des bons cadeaux par e-mail
+
+**Statut actuel : entièrement configuré**, dans la limite des 2 modèles du
+forfait gratuit EmailJS :
+
+| Modèle | Rôle | Template ID | Renseigné dans |
+|---|---|---|---|
+| Notification (partagé, voir section 3) | Vous prévient d'une nouvelle demande de bon cadeau (comme pour une réservation) | `template_m25eyum` | `js/script.js` (`NOTIFY_TEMPLATE_ID`) |
+| Envoi du bon cadeau | Envoie le bon cadeau à la bénéficiaire | `template_bg23ws5` | `js/admin.js` (`GIFTCARD_DELIVERY_TEMPLATE_ID`) |
+
+Une demande de bon cadeau vous notifie donc via le **même modèle générique**
+que les réservations (section 3) — ce n'est qu'au moment où vous confirmez
+le paiement dans l'admin que le **second modèle**, dédié, entre en jeu pour
+envoyer le bon cadeau à la bénéficiaire :
+
+```
+Bon cadeau Prunelle & Amande
+
+Bonjour {{recipient_name}},
+
+{{buyer_name}} vous offre un bon cadeau d'une valeur de {{amount}}
+chez Prunelle & Amande !
+
+Code du bon : {{code}}
+Valable jusqu'au : {{expires_at}}
+
+Message : {{message}}
+
+Pour l'utiliser, présentez ce code lors de votre prise de rendez-vous
+au 07 71 77 67 20 ou par e-mail à prunelle.amande@gmail.com.
+```
+
+Si un jour vous passez à un forfait EmailJS payant (plus de 2 modèles),
+vous pourrez si vous le souhaitez recréer un modèle de notification dédié
+aux bons cadeaux, distinct de celui des réservations — dites-le-moi, je
+sépare alors le code en conséquence.
+
+### 8.3 Statuts d'un bon cadeau
+
+- **En attente de paiement** : demande reçue depuis le site, à encaisser.
+- **Payé — bon envoyé** : paiement confirmé, code généré, e-mail envoyé à
+  la bénéficiaire.
+- **Utilisé** : à faire passer manuellement une fois le bon consommé lors
+  d'un rendez-vous.
+- **Annulé** : demande annulée (par exemple si la personne renonce avant
+  paiement).

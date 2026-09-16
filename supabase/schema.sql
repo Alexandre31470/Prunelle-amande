@@ -123,7 +123,7 @@ alter table clients   enable row level security;
 -- mais ne peut jamais la relire, la modifier ou la lister : les données
 -- de vos clientes restent privées.
 drop policy if exists "public_create_bookings" on bookings;
-create policy "public_create_bookings" on bookings for insert to anon with check (true);
+create policy "public_create_bookings" on bookings for insert to anon, authenticated with check (true);
 
 -- Seule une personne connectée (vous) peut consulter / gérer les demandes
 drop policy if exists "admin_read_bookings" on bookings;
@@ -142,6 +142,45 @@ create policy "admin_read_clients"   on clients for select to authenticated usin
 create policy "admin_insert_clients" on clients for insert to authenticated with check (true);
 create policy "admin_update_clients" on clients for update to authenticated using (true) with check (true);
 create policy "admin_delete_clients" on clients for delete to authenticated using (true);
+
+/* ==========================================================================
+   3. BONS CADEAUX
+   ========================================================================== */
+
+-- Demandes de bons cadeaux envoyées depuis le site public. Le paiement est
+-- réglé directement avec vous (terminal de paiement) ; vous confirmez
+-- ensuite la réception du paiement depuis admin.html, ce qui génère le
+-- code du bon et déclenche l'envoi automatique à la personne bénéficiaire.
+create table if not exists gift_cards (
+  id uuid primary key default gen_random_uuid(),
+  amount numeric(10,2) not null default 0,
+  buyer_name text,
+  buyer_email text,
+  buyer_phone text,
+  recipient_name text,
+  recipient_email text,
+  message text default '',
+  code text,
+  status text default 'nouveau', -- nouveau | paye | utilise | annule
+  validated_at timestamptz,
+  expires_at timestamptz,
+  created_at timestamptz default now()
+);
+
+alter table gift_cards enable row level security;
+
+-- Le site public peut CRÉER une demande de bon cadeau, mais ne peut jamais
+-- la relire, la modifier ou la lister.
+drop policy if exists "public_create_gift_cards" on gift_cards;
+create policy "public_create_gift_cards" on gift_cards for insert to anon, authenticated with check (true);
+
+-- Seule une personne connectée (vous) peut consulter / gérer les bons cadeaux
+drop policy if exists "admin_read_gift_cards" on gift_cards;
+drop policy if exists "admin_update_gift_cards" on gift_cards;
+drop policy if exists "admin_delete_gift_cards" on gift_cards;
+create policy "admin_read_gift_cards"   on gift_cards for select to authenticated using (true);
+create policy "admin_update_gift_cards" on gift_cards for update to authenticated using (true) with check (true);
+create policy "admin_delete_gift_cards" on gift_cards for delete to authenticated using (true);
 
 /* ==========================================================================
    Fin du script.

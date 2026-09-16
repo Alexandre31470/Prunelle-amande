@@ -17,6 +17,26 @@
 
   const sb = window.supabaseClient;
 
+  /* =========================================================
+     CONFIGURATION EMAILJS (envoi du bon cadeau à la bénéficiaire)
+     -----------------------------------------------------
+     Mêmes Public Key / Service ID que dans js/script.js (même compte
+     EmailJS). Le Template ID est différent : créez un second modèle
+     dédié à l'envoi du bon cadeau (voir CLAUDE.md section 8).
+  ========================================================= */
+  const EMAILJS_PUBLIC_KEY = "rY3J00mlNl9YoXuYC";
+  const EMAILJS_SERVICE_ID = "service_4ijfxp8";
+  const GIFTCARD_DELIVERY_TEMPLATE_ID = "template_bg23ws5";
+
+  const isGiftcardEmailConfigured =
+    EMAILJS_PUBLIC_KEY.indexOf("VOTRE_") === -1 &&
+    EMAILJS_SERVICE_ID.indexOf("VOTRE_") === -1 &&
+    GIFTCARD_DELIVERY_TEMPLATE_ID.indexOf("VOTRE_") === -1;
+
+  if (isGiftcardEmailConfigured && window.emailjs) {
+    window.emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+  }
+
   function escapeHtml(str) {
     return String(str || "")
       .replace(/&/g, "&amp;")
@@ -111,6 +131,7 @@
         const panel = document.getElementById("panel-" + tab.dataset.tab);
         if (panel) panel.classList.add("is-active");
         if (tab.dataset.tab === "clients") { loadBookings(); loadClients(); }
+        if (tab.dataset.tab === "giftcards") { loadGiftCards(); }
       });
     });
 
@@ -571,6 +592,166 @@
         loadClients();
       });
     }
+
+    /* =======================================================
+       BONS CADEAUX
+    ======================================================= */
+    const giftcardsList = document.getElementById("giftcards-list");
+    const refreshGiftcardsBtn = document.getElementById("refresh-giftcards-btn");
+    const GIFTCARD_STATUS_LABELS = {
+      nouveau: "En attente de paiement",
+      paye: "Payé — bon envoyé",
+      utilise: "Utilisé",
+      annule: "Annulé",
+    };
+
+    function generateGiftCardCode() {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      let code = "PA-";
+      for (let i = 0; i < 8; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
+    }
+
+    async function loadGiftCards() {
+      giftcardsList.innerHTML = '<p class="admin-loading">Chargement…</p>';
+      const { data, error } = await sb
+        .from("gift_cards")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) { showError("Impossible de charger les bons cadeaux.", error); return; }
+      renderGiftCards(data || []);
+    }
+
+    async function confirmGiftCardPayment(gc) {
+      const code = generateGiftCardCode();
+      const now = new Date();
+      const expires = new Date(now);
+      expires.setFullYear(expires.getFullYear() + 1);
+
+      const { error } = await sb.from("gift_cards").update({
+        status: "paye",
+        code: code,
+        validated_at: now.toISOString(),
+        expires_at: expires.toISOString(),
+      }).eq("id", gc.id);
+      if (error) { showError("Impossible de confirmer le paiement.", error); return; }
+
+      if (isGiftcardEmailConfigured && window.emailjs) {
+        try {
+          await window.emailjs.send(EMAILJS_SERVICE_ID, GIFTCARD_DELIVERY_TEMPLATE_ID, {
+            to_email: gc.recipient_email,
+            recipient_name: gc.recipient_name,
+            buyer_name: gc.buyer_name,
+            amount: Number(gc.amount || 0).toLocaleString("fr-FR") + " €",
+            code: code,
+            message: gc.message || "",
+            expires_at: expires.toLocaleDateString("fr-FR"),
+          });
+          showBanner("Paiement confirmé, le bon cadeau a été envoyé par e-mail à la bénéficiaire.", "success");
+        } catch (err) {
+          showError("Le paiement est confirmé (code " + code + ") mais l'e-mail n'a pas pu être envoyé. Transmettez le code manuellement.", err);
+        }
+      } else {
+        showBanner("Paiement confirmé. Code généré : " + code + " (configurez EmailJS pour l'envoi automatique — voir CLAUDE.md).", "success");
+      }
+      loadGiftCards();
+    }
+
+    function renderGiftCards(giftCards) {
+      giftcardsList.innerHTML = "";
+      if (!giftCards.length) {
+        giftcardsList.innerHTML = '<p class="booking-empty">Aucune demande de bon cadeau pour l\'instant.</p>';
+        return;
+      }
+
+      giftCards.forEach(function (gc) {
+        const card = document.createElement("div");
+        card.className = "booking-card";
+
+        card.innerHTML =
+          '<div class="booking-head">' +
+            '<span class="booking-name">' + escapeHtml(gc.recipient_name || "—") + '</span>' +
+            '<span class="booking-date">' + escapeHtml(new Date(gc.created_at).toLocaleDateString("fr-FR")) + '</span>' +
+          '</div>' +
+          '<p class="booking-total">' + Number(gc.amount || 0).toLocaleString("fr-FR") + '&nbsp;€</p>' +
+          '<div class="booking-meta">' +
+            '<span>Achetée par ' + escapeHtml(gc.buyer_name || "—") + '</span>' +
+            (gc.buyer_email ? '<a href="mailto:' + escapeHtml(gc.buyer_email) + '">' + escapeHtml(gc.buyer_email) + '</a>' : '') +
+            (gc.buyer_phone ? '<a href="tel:' + escapeHtml(gc.buyer_phone) + '">' + escapeHtml(gc.buyer_phone) + '</a>' : '') +
+          '</div>' +
+          '<div class="booking-meta">' +
+            '<span>À envoyer à ' + escapeHtml(gc.recipient_email || "—") + '</span>' +
+          '</div>' +
+          (gc.message ? '<p class="booking-message">' + escapeHtml(gc.message) + '</p>' : '') +
+          (gc.code ? '<p class="booking-message"><strong>Code&nbsp;: ' + escapeHtml(gc.code) + '</strong> — valable jusqu\'au ' + (gc.expires_at ? new Date(gc.expires_at).toLocaleDateString("fr-FR") : "—") + '</p>' : '') +
+          '<div class="booking-footer"></div>';
+
+        const footer = card.querySelector(".booking-footer");
+
+        const statusBadge = document.createElement("span");
+        statusBadge.className = "booking-status";
+        statusBadge.dataset.status = gc.status || "nouveau";
+        statusBadge.textContent = GIFTCARD_STATUS_LABELS[gc.status] || gc.status;
+        footer.appendChild(statusBadge);
+
+        if (gc.status === "nouveau") {
+          const confirmBtn = document.createElement("button");
+          confirmBtn.type = "button";
+          confirmBtn.className = "btn btn-primary";
+          confirmBtn.textContent = "✓ Confirmer le paiement et envoyer le bon";
+          confirmBtn.addEventListener("click", function () {
+            if (!confirm("Confirmer que le paiement de " + Number(gc.amount || 0).toLocaleString("fr-FR") + " € a bien été reçu ? Le bon cadeau sera envoyé immédiatement par e-mail.")) return;
+            confirmGiftCardPayment(gc);
+          });
+          footer.appendChild(confirmBtn);
+        }
+
+        if (gc.status === "paye") {
+          const usedBtn = document.createElement("button");
+          usedBtn.type = "button";
+          usedBtn.className = "booking-to-client-btn";
+          usedBtn.textContent = "Marquer comme utilisé";
+          usedBtn.addEventListener("click", async function () {
+            const { error } = await sb.from("gift_cards").update({ status: "utilise" }).eq("id", gc.id);
+            if (error) { showError("Impossible de mettre à jour le statut.", error); return; }
+            loadGiftCards();
+          });
+          footer.appendChild(usedBtn);
+        }
+
+        if (gc.status === "nouveau" || gc.status === "paye") {
+          const cancelBtn = document.createElement("button");
+          cancelBtn.type = "button";
+          cancelBtn.className = "btn btn-ghost";
+          cancelBtn.textContent = "Annuler";
+          cancelBtn.addEventListener("click", async function () {
+            if (!confirm("Annuler cette demande de bon cadeau ?")) return;
+            const { error } = await sb.from("gift_cards").update({ status: "annule" }).eq("id", gc.id);
+            if (error) { showError("Impossible d'annuler cette demande.", error); return; }
+            loadGiftCards();
+          });
+          footer.appendChild(cancelBtn);
+        }
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.className = "btn btn-ghost";
+        deleteBtn.textContent = "Supprimer";
+        deleteBtn.addEventListener("click", async function () {
+          if (!confirm("Supprimer définitivement cette demande de bon cadeau ?")) return;
+          const { error } = await sb.from("gift_cards").delete().eq("id", gc.id);
+          if (error) { showError("Impossible de supprimer cette demande.", error); return; }
+          loadGiftCards();
+        });
+        footer.appendChild(deleteBtn);
+
+        giftcardsList.appendChild(card);
+      });
+    }
+
+    if (refreshGiftcardsBtn) refreshGiftcardsBtn.addEventListener("click", loadGiftCards);
 
     /* =======================================================
        CALENDRIER (aperçu local, propre à cet appareil)

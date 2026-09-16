@@ -13,15 +13,22 @@
      Voir le fichier README.md fourni avec le site pour le détail
      des étapes.
   ========================================================= */
-  const EMAILJS_PUBLIC_KEY = "VOTRE_PUBLIC_KEY";
-  const EMAILJS_SERVICE_ID = "VOTRE_SERVICE_ID";
-  const EMAILJS_TEMPLATE_ID = "VOTRE_TEMPLATE_ID";
+  const EMAILJS_PUBLIC_KEY = "rY3J00mlNl9YoXuYC";
+  const EMAILJS_SERVICE_ID = "service_4ijfxp8";
   const OWNER_EMAIL = "prunelle.amande@gmail.com"; // adresse qui reçoit les demandes
+
+  // Modèle EmailJS unique qui vous prévient d'une nouvelle demande —
+  // réservation de rendez-vous OU bon cadeau (le forfait gratuit EmailJS
+  // limite à 2 modèles ; les deux types de notification partagent donc
+  // ce même modèle générique). Voir CLAUDE.md section 3 pour son contenu.
+  const NOTIFY_TEMPLATE_ID = "template_m25eyum";
 
   const isEmailJsConfigured =
     EMAILJS_PUBLIC_KEY.indexOf("VOTRE_") === -1 &&
     EMAILJS_SERVICE_ID.indexOf("VOTRE_") === -1 &&
-    EMAILJS_TEMPLATE_ID.indexOf("VOTRE_") === -1;
+    NOTIFY_TEMPLATE_ID.indexOf("VOTRE_") === -1;
+
+  const isGiftcardEmailConfigured = isEmailJsConfigured;
 
   if (isEmailJsConfigured && window.emailjs) {
     window.emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
@@ -468,19 +475,28 @@
 
       saveBookingToSupabase(data);
 
+      const details = [
+        "Date souhaitée : " + (data.date || "—"),
+        "Heure souhaitée : " + (data.time || "—"),
+        "",
+        "Prestations sélectionnées :",
+        itemsText,
+        "",
+        "Total estimé : " + total.toLocaleString("fr-FR") + " €",
+        "",
+        "Adresse (si domicile souhaité) : " + (data.address || "— (rendez-vous en institut)"),
+        "Message : " + (data.message || "—"),
+      ].join("\n");
+
       if (isEmailJsConfigured && window.emailjs) {
         window.emailjs
-          .send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+          .send(EMAILJS_SERVICE_ID, NOTIFY_TEMPLATE_ID, {
             to_email: OWNER_EMAIL,
+            request_type: "Réservation de rendez-vous",
             from_name: data.fname + " " + data.lname,
             reply_to: data.email,
             phone: data.phone,
-            date: data.date,
-            time: data.time,
-            items: itemsText,
-            total: total.toLocaleString("fr-FR") + " €",
-            address: data.address,
-            message: data.message,
+            details: details,
           })
           .then(function () {
             setStatus(
@@ -508,6 +524,130 @@
         );
         window.location.href = buildMailtoFallback(data);
         submitBtn.removeAttribute("disabled");
+      }
+    });
+  }
+
+  /* ---------------------------------------------------------
+     Formulaire de bon cadeau
+  --------------------------------------------------------- */
+  const giftcardForm = document.getElementById("giftcard-form");
+  const giftcardStatusEl = document.getElementById("giftcard-form-status");
+  const giftcardSubmitBtn = document.getElementById("giftcard-submit-btn");
+
+  function setGiftcardStatus(message, type) {
+    giftcardStatusEl.textContent = message;
+    giftcardStatusEl.className = "form-status" + (type ? " " + type : "");
+  }
+
+  function buildGiftcardMailtoFallback(data) {
+    const subject = encodeURIComponent(
+      "Demande de bon cadeau — " + data.buyerName
+    );
+    const bodyLines = [
+      "Nouvelle demande de bon cadeau",
+      "",
+      "Montant : " + data.amount + " €",
+      "",
+      "Acheteur/euse : " + data.buyerName,
+      "E-mail : " + data.buyerEmail,
+      "Téléphone : " + data.buyerPhone,
+      "",
+      "Bénéficiaire : " + data.recipientName,
+      "E-mail bénéficiaire : " + data.recipientEmail,
+      "",
+      "Message : " + (data.message || "—"),
+    ];
+    const body = encodeURIComponent(bodyLines.join("\n"));
+    return "mailto:" + OWNER_EMAIL + "?subject=" + subject + "&body=" + body;
+  }
+
+  async function saveGiftcardToSupabase(data) {
+    if (!window.supabaseClient) return;
+    try {
+      await window.supabaseClient.from("gift_cards").insert({
+        amount: data.amount,
+        buyer_name: data.buyerName,
+        buyer_email: data.buyerEmail,
+        buyer_phone: data.buyerPhone,
+        recipient_name: data.recipientName,
+        recipient_email: data.recipientEmail,
+        message: data.message,
+        status: "nouveau",
+      });
+    } catch (err) {
+      console.warn("Impossible d'enregistrer la demande de bon cadeau dans Supabase.", err);
+    }
+  }
+
+  if (giftcardForm) {
+    giftcardForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      if (!giftcardForm.checkValidity()) {
+        giftcardForm.reportValidity();
+        return;
+      }
+
+      const data = {
+        amount: Number(giftcardForm.amount.value),
+        buyerName: giftcardForm.buyerName.value.trim(),
+        buyerEmail: giftcardForm.buyerEmail.value.trim(),
+        buyerPhone: giftcardForm.buyerPhone.value.trim(),
+        recipientName: giftcardForm.recipientName.value.trim(),
+        recipientEmail: giftcardForm.recipientEmail.value.trim(),
+        message: giftcardForm.message.value.trim(),
+      };
+
+      giftcardSubmitBtn.setAttribute("disabled", "true");
+      setGiftcardStatus("Envoi de votre demande en cours…", "");
+
+      saveGiftcardToSupabase(data);
+
+      const details = [
+        "Montant : " + data.amount.toLocaleString("fr-FR") + " €",
+        "",
+        "Bénéficiaire : " + data.recipientName,
+        "E-mail bénéficiaire : " + data.recipientEmail,
+        "",
+        "Message : " + (data.message || "—"),
+      ].join("\n");
+
+      if (isGiftcardEmailConfigured && window.emailjs) {
+        window.emailjs
+          .send(EMAILJS_SERVICE_ID, NOTIFY_TEMPLATE_ID, {
+            to_email: OWNER_EMAIL,
+            request_type: "Bon cadeau",
+            from_name: data.buyerName,
+            reply_to: data.buyerEmail,
+            phone: data.buyerPhone,
+            details: details,
+          })
+          .then(function () {
+            setGiftcardStatus(
+              "Merci ! Votre demande de bon cadeau a bien été envoyée. Vous serez contactée très vite pour finaliser le paiement.",
+              "success"
+            );
+            giftcardForm.reset();
+          })
+          .catch(function () {
+            setGiftcardStatus(
+              "L'envoi automatique a échoué. Une fenêtre de messagerie va s'ouvrir pour finaliser votre demande.",
+              "error"
+            );
+            window.location.href = buildGiftcardMailtoFallback(data);
+          })
+          .finally(function () {
+            giftcardSubmitBtn.removeAttribute("disabled");
+          });
+      } else {
+        // Solution de secours tant qu'EmailJS n'est pas configuré
+        setGiftcardStatus(
+          "Votre messagerie va s'ouvrir pour envoyer votre demande — pensez à cliquer sur \"Envoyer\".",
+          "success"
+        );
+        window.location.href = buildGiftcardMailtoFallback(data);
+        giftcardSubmitBtn.removeAttribute("disabled");
       }
     });
   }

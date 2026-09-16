@@ -42,6 +42,7 @@
         <li><a href="#espace">L'espace</a></li>
         <li><a href="#prestations">Prestations</a></li>
         <li><a href="#avantages">Avantages</a></li>
+        <li><a href="#bons-cadeaux">Bons cadeaux</a></li>
         <li><a href="#contact">Contact</a></li>
       </ul>
       <a href="#reservation" class="btn btn-primary nav-cta">Réserver</a>
@@ -81,15 +82,15 @@
   <!-- A PROPOS -->
   <section class="section section-dark" id="apropos">
     <div class="container about-grid">
+      <div class="about-visual reveal">
+        <img class="about-photo" src="images/a-propos-background.webp" alt="Fleur de coton, symbole de douceur de Prunelle &amp; Amande" loading="lazy">
+      </div>
       <div class="about-copy reveal">
         <h2>À propos de moi</h2>
         <p>Bienvenue chez Prunelle &amp; Amande, un espace beauté et bien-être à Allinges, pensé comme un cocon chaleureux et intimiste.</p>
         <p>Après plusieurs expériences en instituts, parfumeries, spas et hôtels, j'ai choisi de créer mon propre espace afin de vous proposer des prestations réalisées avec écoute, douceur et attention.</p>
         <p>Mon objectif&nbsp;: vous offrir un véritable moment pour vous, entre beauté, détente et bien-être.</p>
         <p class="about-signature">— Amandine</p>
-      </div>
-      <div class="about-visual reveal">
-        
       </div>
     </div>
   </section>
@@ -138,6 +139,78 @@
         <h2>Vos avantages</h2>
       </div>
       <div class="card-grid" id="offers-list"></div>
+    </div>
+  </section>
+
+  <!-- BONS CADEAUX -->
+  <section class="section" id="bons-cadeaux">
+    <div class="container reservation-grid">
+      <div class="reservation-intro">
+        <h2>Offrir un bon cadeau</h2>
+        <p>Faites plaisir à une personne qui vous est chère en lui offrant un moment de bien-être chez Prunelle &amp; Amande.</p>
+        <ul class="reservation-info">
+          <li><strong>Montants&nbsp;:</strong> 30&nbsp;€, 50&nbsp;€, 80&nbsp;€ ou 120&nbsp;€</li>
+          <li><strong>Paiement&nbsp;:</strong> réglé directement avec Amandine (carte bancaire) une fois votre demande reçue</li>
+          <li><strong>Envoi&nbsp;:</strong> le bon cadeau est envoyé par e-mail à la personne bénéficiaire dès le paiement confirmé</li>
+        </ul>
+        <p class="reservation-alt">Besoin d'une réponse plus rapide&nbsp;? <a href="tel:+33771776720">Appelez-moi directement</a>.</p>
+      </div>
+
+      <form class="booking-form reveal" id="giftcard-form" novalidate>
+        <div class="form-field">
+          <label for="gc-amount">Montant du bon cadeau</label>
+          <select id="gc-amount" name="amount" required>
+            <option value="">Choisir un montant</option>
+            <option value="30">30 €</option>
+            <option value="50">50 €</option>
+            <option value="80">80 €</option>
+            <option value="120">120 €</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="gc-buyer-name">Votre prénom et nom</label>
+            <input type="text" id="gc-buyer-name" name="buyerName" autocomplete="name" required>
+          </div>
+          <div class="form-field">
+            <label for="gc-buyer-phone">Votre téléphone</label>
+            <input type="tel" id="gc-buyer-phone" name="buyerPhone" autocomplete="tel" required>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="gc-buyer-email">Votre e-mail</label>
+          <input type="email" id="gc-buyer-email" name="buyerEmail" autocomplete="email" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="gc-recipient-name">Prénom et nom de la personne bénéficiaire</label>
+            <input type="text" id="gc-recipient-name" name="recipientName" required>
+          </div>
+          <div class="form-field">
+            <label for="gc-recipient-email">E-mail de la personne bénéficiaire</label>
+            <input type="email" id="gc-recipient-email" name="recipientEmail" required>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="gc-message">Message personnalisé <span class="optional-tag">(optionnel)</span></label>
+          <textarea id="gc-message" name="message" rows="3" placeholder="Un petit mot à ajouter au bon cadeau…"></textarea>
+        </div>
+
+        <label class="consent">
+          <input type="checkbox" id="gc-consent" name="consent" required>
+          <span>J'accepte que mes informations soient utilisées pour traiter ma demande de bon cadeau.</span>
+        </label>
+
+        <button type="submit" class="btn btn-primary btn-submit" id="giftcard-submit-btn">
+          <span class="btn-label">Envoyer ma demande de bon cadeau</span>
+        </button>
+
+        <p class="form-status" id="giftcard-form-status" role="status" aria-live="polite"></p>
+      </form>
     </div>
   </section>
 
@@ -276,7 +349,7 @@
           </li>
           <li>
             <span class="contact-label">Vous avez apprécié notre prestation ?</span>
-            <a href="https://maps.app.goo.gl/Rhu7hHEXSwqwmX4x6" target="_blank" rel="noopener">⭐ Laissez-nous un avis Google</a>
+            <a href="https://share.google/1u8z9TieyRRoa5LZe" target="_blank" rel="noopener">⭐ Laissez-nous un avis Google</a>
           </li>
         </ul>
         <div class="social-links" aria-label="Réseaux sociaux">
@@ -312,10 +385,11 @@
       <a href="#espace">L'espace</a>
       <a href="#prestations">Prestations</a>
       <a href="#avantages">Avantages</a>
+      <a href="#bons-cadeaux">Bons cadeaux</a>
       <a href="#reservation">Réservation</a>
       <a href="#contact">Contact</a>
     </nav>
-    <p class="footer-legal">© <span id="year"></span> Prunelle &amp; Amande — Institut de beauté à Allinges. <br>Tous droits réservés.<br>2100C avenue de Thonon, 74200 Allinges — SIRET à compléter.</p>
+    <p class="footer-legal">© <span id="year"></span> Prunelle &amp; Amande — Institut de beauté à Allinges. <br>Tous droits réservés.<br>2100C avenue de Thonon, 74200 Allinges — SIRET: 107 863 292 00010.
     <a href="admin.html" class="footer-admin-link">Espace pro</a>
   </div>
 </footer>
