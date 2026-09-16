@@ -372,3 +372,72 @@ sépare alors le code en conséquence.
   d'un rendez-vous.
 - **Annulé** : demande annulée (par exemple si la personne renonce avant
   paiement).
+
+## 9. Faire apparaître les réservations du site dans votre agenda Google (et donc sur votre iPhone)
+
+Vous pouvez faire en sorte que chaque nouvelle réservation reçue depuis le
+site crée **automatiquement un événement dans votre Google Agenda**, qui se
+synchronisera ensuite tout seul sur votre iPhone comme n'importe quel autre
+rendez-vous de cet agenda.
+
+Un site statique comme celui-ci ne peut pas se connecter directement à
+Google Agenda (il faudrait y stocker un mot de passe ou une clé secrète
+Google en clair, ce qui n'est pas sûr). La solution consiste donc à
+brancher deux services que vous configurez vous-même, sans écrire de code :
+**Supabase** (qui prévient dès qu'une réservation arrive) et **Make.com**
+(qui crée l'événement dans votre agenda). Make.com propose un forfait
+gratuit largement suffisant (1 000 actions par mois) pour ce genre d'usage.
+
+### 9.1 Créer le scénario Make.com
+
+1. Créez un compte gratuit sur https://www.make.com puis créez un nouveau
+   scénario (« Create a new scenario »).
+2. Ajoutez comme premier module **Webhooks → Custom webhook**, cliquez sur
+   « Add » pour en créer un nouveau (nom libre, par exemple « Réservation
+   Prunelle & Amande »). Make.com vous donne une **URL unique** : copiez-la,
+   vous en aurez besoin à l'étape 9.2. Gardez cette URL secrète (ne la
+   partagez pas, ne la collez pas dans un fichier du site) : n'importe qui
+   la connaissant pourrait créer de faux événements dans votre agenda.
+3. Ajoutez un deuxième module **Google Calendar → Create an Event**,
+   connectez votre compte Google (vous serez redirigée vers l'écran de
+   connexion Google habituel), et choisissez l'agenda concerné.
+4. Une fois l'étape 9.2 ci-dessous terminée et un premier test envoyé,
+   Make.com aura « appris » la structure des données reçues et vous pourrez
+   remplir les champs de l'événement en cliquant dessus pour insérer les
+   bonnes valeurs :
+   - **Titre** : combinez par exemple `first_name`, `last_name` et le
+     premier élément de `items` (ex. « Camille Dupont — Soin visage »).
+   - **Date/heure de début** : combinez `wanted_date` et `wanted_time`.
+   - **Date/heure de fin** : Make.com ne connaît pas la durée exacte des
+     prestations choisies (elle n'est pas encore transmise), donc réglez
+     une **durée par défaut** (par exemple +1h après le début) — vous
+     pourrez toujours ajuster l'horaire d'un événement précis directement
+     dans votre agenda si besoin. Dites-le-moi si vous voulez qu'on
+     transmette la durée réelle des prestations plus tard.
+   - **Description** : combinez `phone`, `email`, la liste `items`,
+     `address` et `message`, pour retrouver toutes les infos utiles
+     directement dans l'événement.
+5. Activez le scénario (interrupteur en haut à droite sur « ON »).
+
+### 9.2 Brancher Supabase sur ce webhook
+
+1. Dans votre projet Supabase → **Database** (menu de gauche) →
+   **Webhooks** → **Create a new hook**.
+2. Nom libre (par exemple « Nouvelle réservation vers agenda »), **Table** :
+   `bookings`, **Events** : cochez uniquement **Insert**.
+3. **Type** : « HTTP Request », **Method** : `POST`, **URL** : collez l'URL
+   copiée à l'étape 9.1.2. Laissez les en-têtes par défaut (Supabase envoie
+   automatiquement un JSON contenant la nouvelle réservation).
+4. Enregistrez (« Create webhook »).
+
+### 9.3 Tester
+
+Faites une réservation test depuis le site public, puis vérifiez qu'un
+nouvel événement apparaît dans Make.com (onglet « History » du scénario)
+et dans votre Google Agenda — il devrait ensuite apparaître sur votre
+iPhone en quelques instants, selon la fréquence de synchronisation réglée
+dans l'app Calendrier de l'iPhone.
+
+Ceci ne concerne que les réservations de prestations (table `bookings`).
+Si vous voulez également le faire pour les demandes de bons cadeaux, on
+pourra créer un second webhook du même type sur la table `gift_cards`.
