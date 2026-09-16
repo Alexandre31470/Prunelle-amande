@@ -112,9 +112,15 @@ create table if not exists clients (
   email text,
   phone text,
   notes text default '',
+  allergies text default '',
+  birthday date,
   tags text default '',
   created_at timestamptz default now()
 );
+
+-- Ajoute les colonnes manquantes si la table existait déjà avant leur ajout
+alter table clients add column if not exists allergies text default '';
+alter table clients add column if not exists birthday date;
 
 alter table bookings enable row level security;
 alter table clients   enable row level security;

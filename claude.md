@@ -247,6 +247,45 @@ désormais `anon` et `authenticated`), donc vous ne devriez plus le
 rencontrer. Si vous ajoutez un jour une nouvelle table alimentée par un
 formulaire public, pensez à autoriser les deux rôles de la même façon.
 
+### 7.7 Fiches clientes : ancienneté, historique, CA et points de fidélité
+
+Les fiches clientes (`admin.html` → onglet « Clientes & réservations ») ne
+se limitent plus à un simple répertoire : chaque fiche affiche maintenant
+automatiquement, sous les champs modifiables, un bloc calculé à partir de
+l'historique de réservations de la cliente (rapproché par son **e-mail** —
+aucune saisie supplémentaire n'est nécessaire) :
+
+- **Cliente depuis le [date]** : date de sa toute première réservation.
+- **Dernière visite le [date]**, avec un badge **« À relancer »** si elle
+  n'est pas revenue depuis plus de 3 mois. Un résumé du nombre de clientes
+  concernées s'affiche en haut de la liste. Ce seuil de 3 mois est réglable
+  dans `js/admin.js`, constante `RELANCE_THRESHOLD_MONTHS`.
+- **CA réalisé** : somme des réservations passées au statut « terminé ».
+- **Points de fidélité** : selon votre règle (1 € dépensé = 1 point, une
+  réduction de 10 € tous les 250 points), avec un badge 🎁 dès qu'une
+  réduction est disponible. Ce barème est réglable dans `js/admin.js`,
+  constantes `LOYALTY_POINTS_PER_EURO`, `LOYALTY_REWARD_THRESHOLD` et
+  `LOYALTY_REWARD_AMOUNT` — ces réductions ne sont pas déduites
+  automatiquement, c'est à vous de les appliquer lors du paiement en
+  institut, puis de garder une trace (par exemple dans les notes).
+- **Historique des prestations** : repliable, liste chaque réservation
+  passée (date, prestations, statut).
+
+Deux nouveaux champs viennent aussi compléter chaque fiche :
+
+- **Anniversaire** (facultatif) : affiche un badge 🎂 sur la fiche pendant
+  tout le mois de son anniversaire, pour penser à une attention
+  personnalisée.
+- **Allergies / contre-indications** : champ séparé des « Notes libres »,
+  pour y noter spécifiquement les composants ou soins à éviter — les notes
+  libres restent disponibles pour vos autres observations (préférences,
+  habitudes…).
+
+Comme pour les autres tables, `supabase/schema.sql` doit être réexécuté une
+fois (SQL Editor → coller tout le fichier → Run) pour ajouter les colonnes
+`birthday` et `allergies` à la table `clients` si votre base a été créée
+avant cet ajout.
+
 ## 8. Bons cadeaux
 
 Le site permet désormais à vos clientes d'acheter un bon cadeau depuis

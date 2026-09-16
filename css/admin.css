@@ -386,10 +386,17 @@
   border-radius: 10px;
   padding: 18px 20px;
   margin-bottom: 12px;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
-  grid-template-columns: 1fr 1fr 1fr auto;
 }
+.client-card-top{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.client-card-top input{ flex: 1 1 150px; }
 .client-card input, .client-card textarea{
   font-family: var(--font-body);
   font-size: 0.88rem;
@@ -399,7 +406,16 @@
   background: var(--cream);
   width: 100%;
 }
-.client-card .client-notes{ grid-column: 1 / -1; resize: vertical; }
+.client-field-label{
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  flex: 0 0 auto;
+}
+.client-card .client-notes, .client-card .client-allergies{ resize: vertical; }
+.client-card .client-allergies{ border-color: #b3453c66; }
 .client-delete{
   background: none;
   border: 1px solid var(--border-soft);
@@ -407,7 +423,51 @@
   color: #b3453c;
   cursor: pointer;
   height: 38px;
+  flex: 0 0 auto;
+  margin-left: auto;
 }
+
+/* ---------- Bloc CRM (historique, fidélité, relance) ---------- */
+.client-stats{
+  border-top: 1px dashed var(--border-soft);
+  padding-top: 10px;
+}
+.client-badges{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.client-badge{
+  font-size: 0.78rem;
+  padding: 0.3em 0.7em;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: var(--cream);
+  color: var(--text-muted);
+}
+.client-badge-relance{ border-color: var(--terracotta); color: var(--terracotta-deep); }
+.client-badge-birthday{ border-color: var(--sage); color: var(--sage-deep); }
+.client-badge-reward{ border-color: #c9a227; color: #8a6d12; background: #fbf3d9; }
+.client-stats-grid{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 16px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.client-history-details{ font-size: 0.85rem; }
+.client-history-details summary{ cursor: pointer; color: var(--terracotta-deep); }
+.client-history{
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: grid;
+  gap: 3px;
+  color: var(--text-muted);
+}
+.client-history-empty{ margin: 8px 0 0; color: var(--text-muted); }
 .booking-to-client-btn{
   background: none;
   border: 1px solid var(--border-soft);
@@ -420,5 +480,5 @@
 .booking-to-client-btn:hover{ background: var(--sage-tint); }
 
 @media (max-width: 720px){
-  .client-card{ grid-template-columns: 1fr 1fr; }
+  .client-stats-grid{ grid-template-columns: 1fr; }
 }

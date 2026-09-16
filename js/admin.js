@@ -493,25 +493,86 @@
     if (refreshBookingsBtn) refreshBookingsBtn.addEventListener("click", loadBookings);
 
     /* =======================================================
-       FICHES CLIENTES (répertoire manuel)
+       FICHES CLIENTES (répertoire manuel + historique CRM)
     ======================================================= */
     const clientsEditor = document.getElementById("clients-editor");
+    const clientsRelanceSummary = document.getElementById("clients-relance-summary");
+
+    // Une cliente est « à relancer » si sa dernière réservation remonte à
+    // plus de ce nombre de mois. Ajustez cette valeur si besoin.
+    const RELANCE_THRESHOLD_MONTHS = 3;
+    // Programme de fidélité de la dirigeante : 1 € dépensé (prestations
+    // terminées) = 1 point, une réduction de 10 € tous les 250 points.
+    const LOYALTY_POINTS_PER_EURO = 1;
+    const LOYALTY_REWARD_THRESHOLD = 250;
+    const LOYALTY_REWARD_AMOUNT = 10;
 
     async function loadClients() {
       clientsEditor.innerHTML = '<p class="admin-loading">Chargement…</p>';
-      const { data, error } = await sb.from("clients").select("*").order("created_at", { ascending: false });
-      if (error) { showError("Impossible de charger les fiches clientes.", error); return; }
-      renderClientsEditor(data || []);
+      const [clientsRes, bookingsRes] = await Promise.all([
+        sb.from("clients").select("*").order("created_at", { ascending: false }),
+        sb.from("bookings").select("email, wanted_date, items, total, status, created_at"),
+      ]);
+      if (clientsRes.error) { showError("Impossible de charger les fiches clientes.", clientsRes.error); return; }
+      renderClientsEditor(clientsRes.data || [], bookingsRes.data || []);
     }
 
-    function renderClientsEditor(clients) {
+    function computeClientStats(client, bookings) {
+      const email = (client.email || "").trim().toLowerCase();
+      const history = email
+        ? bookings
+            .filter(function (b) { return (b.email || "").trim().toLowerCase() === email; })
+            .sort(function (a, b) { return new Date(b.wanted_date || b.created_at) - new Date(a.wanted_date || a.created_at); })
+        : [];
+
+      const firstVisit = history.length
+        ? new Date(history[history.length - 1].wanted_date || history[history.length - 1].created_at)
+        : null;
+      const lastVisit = history.length
+        ? new Date(history[0].wanted_date || history[0].created_at)
+        : null;
+
+      const caTotal = history
+        .filter(function (b) { return b.status === "terminé"; })
+        .reduce(function (sum, b) { return sum + Number(b.total || 0); }, 0);
+
+      const points = Math.floor(caTotal * LOYALTY_POINTS_PER_EURO);
+      const rewardsEarned = Math.floor(points / LOYALTY_REWARD_THRESHOLD);
+      const pointsToNext = LOYALTY_REWARD_THRESHOLD - (points % LOYALTY_REWARD_THRESHOLD);
+
+      let monthsSinceLastVisit = null;
+      if (lastVisit) {
+        monthsSinceLastVisit = (Date.now() - lastVisit.getTime()) / (1000 * 60 * 60 * 24 * 30.44);
+      }
+      const toRelance = monthsSinceLastVisit !== null && monthsSinceLastVisit >= RELANCE_THRESHOLD_MONTHS;
+
+      return { history: history, firstVisit: firstVisit, lastVisit: lastVisit, caTotal: caTotal, points: points, rewardsEarned: rewardsEarned, pointsToNext: pointsToNext, toRelance: toRelance };
+    }
+
+    function isBirthdayThisMonth(birthday) {
+      if (!birthday) return false;
+      const d = new Date(birthday + "T00:00:00");
+      if (isNaN(d)) return false;
+      return d.getMonth() === new Date().getMonth();
+    }
+
+    function renderClientsEditor(clients, bookings) {
       clientsEditor.innerHTML = "";
       if (!clients.length) {
         clientsEditor.innerHTML = '<p class="booking-empty">Aucune fiche cliente pour l\'instant.</p>';
+        if (clientsRelanceSummary) clientsRelanceSummary.textContent = "";
         return;
       }
 
+      const relanceCount = clients.filter(function (c) { return computeClientStats(c, bookings).toRelance; }).length;
+      if (clientsRelanceSummary) {
+        clientsRelanceSummary.textContent = relanceCount
+          ? relanceCount + " cliente" + (relanceCount > 1 ? "s" : "") + " n'" + (relanceCount > 1 ? "ont" : "a") + " pas pris rendez-vous depuis plus de " + RELANCE_THRESHOLD_MONTHS + " mois — repérable avec le badge « À relancer » ci-dessous."
+          : "";
+      }
+
       clients.forEach(function (client) {
+        const stats = computeClientStats(client, bookings);
         const card = document.createElement("div");
         card.className = "client-card";
 
@@ -535,6 +596,14 @@
         phoneInput.placeholder = "Téléphone";
         phoneInput.value = client.phone || "";
 
+        const birthdayLabel = document.createElement("label");
+        birthdayLabel.className = "client-field-label";
+        birthdayLabel.textContent = "Anniversaire";
+        const birthdayInput = document.createElement("input");
+        birthdayInput.type = "date";
+        birthdayInput.value = client.birthday || "";
+        birthdayLabel.appendChild(birthdayInput);
+
         const deleteBtn = document.createElement("button");
         deleteBtn.type = "button";
         deleteBtn.className = "client-delete";
@@ -547,10 +616,16 @@
           loadClients();
         });
 
+        const allergiesInput = document.createElement("textarea");
+        allergiesInput.className = "client-allergies";
+        allergiesInput.rows = 2;
+        allergiesInput.placeholder = "Allergies / contre-indications (composants à éviter…)";
+        allergiesInput.value = client.allergies || "";
+
         const notesInput = document.createElement("textarea");
         notesInput.className = "client-notes";
         notesInput.rows = 2;
-        notesInput.placeholder = "Notes (préférences, historique, allergies…)";
+        notesInput.placeholder = "Notes libres (préférences, habitudes…)";
         notesInput.value = client.notes || "";
 
         async function saveClient() {
@@ -559,21 +634,57 @@
             last_name: lnameInput.value.trim(),
             email: emailInput.value.trim(),
             phone: phoneInput.value.trim(),
+            birthday: birthdayInput.value || null,
+            allergies: allergiesInput.value.trim(),
             notes: notesInput.value.trim(),
           }).eq("id", client.id);
           if (error) showError("Impossible d'enregistrer cette fiche.", error);
           else showBanner("Fiche cliente enregistrée.", "success");
         }
-        [fnameInput, lnameInput, emailInput, phoneInput, notesInput].forEach(function (el) {
+        [fnameInput, lnameInput, emailInput, phoneInput, birthdayInput, allergiesInput, notesInput].forEach(function (el) {
           el.addEventListener("blur", saveClient);
         });
 
-        card.appendChild(fnameInput);
-        card.appendChild(lnameInput);
-        card.appendChild(emailInput);
-        card.appendChild(phoneInput);
-        card.appendChild(deleteBtn);
+        // --- Bloc CRM (lecture seule, calculé depuis l'historique des réservations) ---
+        const statsBlock = document.createElement("div");
+        statsBlock.className = "client-stats";
+
+        const badges = [];
+        if (stats.toRelance) badges.push('<span class="client-badge client-badge-relance">À relancer</span>');
+        if (isBirthdayThisMonth(client.birthday)) badges.push('<span class="client-badge client-badge-birthday">🎂 Anniversaire ce mois-ci</span>');
+        if (stats.rewardsEarned > 0) badges.push('<span class="client-badge client-badge-reward">🎁 ' + stats.rewardsEarned + ' réduction' + (stats.rewardsEarned > 1 ? "s" : "") + ' de ' + LOYALTY_REWARD_AMOUNT + '&nbsp;€ disponible' + (stats.rewardsEarned > 1 ? "s" : "") + '</span>');
+
+        const historyHtml = stats.history.length
+          ? '<ul class="client-history">' + stats.history.map(function (b) {
+              const items = Array.isArray(b.items) ? b.items.map(function (it) { return it.label; }).join(", ") : "";
+              const dateLabel = new Date(b.wanted_date || b.created_at).toLocaleDateString("fr-FR");
+              return '<li>' + escapeHtml(dateLabel) + ' — ' + escapeHtml(items || "—") + ' <em>(' + escapeHtml(b.status || "nouveau") + ')</em></li>';
+            }).join("") + '</ul>'
+          : '<p class="client-history-empty">Aucune réservation enregistrée pour l\'instant.</p>';
+
+        statsBlock.innerHTML =
+          '<div class="client-badges">' + badges.join("") + '</div>' +
+          '<div class="client-stats-grid">' +
+            '<span>Cliente depuis le ' + (stats.firstVisit ? escapeHtml(stats.firstVisit.toLocaleDateString("fr-FR")) : "—") + '</span>' +
+            '<span>Dernière visite le ' + (stats.lastVisit ? escapeHtml(stats.lastVisit.toLocaleDateString("fr-FR")) : "—") + '</span>' +
+            '<span>CA réalisé : ' + stats.caTotal.toLocaleString("fr-FR") + '&nbsp;€</span>' +
+            '<span>Points fidélité : ' + stats.points + ' pt' + (stats.points > 1 ? "s" : "") + ' (' + stats.pointsToNext + ' avant la prochaine réduction de ' + LOYALTY_REWARD_AMOUNT + '&nbsp;€)</span>' +
+          '</div>' +
+          '<details class="client-history-details"><summary>Historique des prestations (' + stats.history.length + ')</summary>' + historyHtml + '</details>';
+
+        const topRow = document.createElement("div");
+        topRow.className = "client-card-top";
+        topRow.appendChild(fnameInput);
+        topRow.appendChild(lnameInput);
+        topRow.appendChild(emailInput);
+        topRow.appendChild(phoneInput);
+        topRow.appendChild(birthdayLabel);
+        topRow.appendChild(deleteBtn);
+
+        card.appendChild(topRow);
+        card.appendChild(allergiesInput);
         card.appendChild(notesInput);
+        card.appendChild(statsBlock);
         clientsEditor.appendChild(card);
       });
     }
